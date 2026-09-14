@@ -1,122 +1,124 @@
 import Link from "next/link";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { GeometricDivider } from "@/components/ui/divider";
-import { CategoryGrid } from "@/components/public/CategoryGrid";
-import { MasalaCard } from "@/components/public/MasalaCard";
-import { SearchIcon, ShareIcon, PrintIcon, BookmarkIcon } from "@/components/ui/icons";
+import { ArchRow, ArchIcon } from "@/components/ui/arch";
+import { SearchIcon, ChevronRightIcon } from "@/components/ui/icons";
+import { getCategories, getPublishedMasala } from "@/lib/firebase/reads";
 
-// ⚠️ নমুনা ডেটা — পরের ধাপে Firestore থেকে আসল ডেটা ফেচ করে এখানে বসানো হবে
-const FEATURED_CATEGORIES = [
-  { slug: "namaz", name: "নামাজ" },
-  { slug: "roja", name: "রোজা" },
-  { slug: "zakat", name: "যাকাত" },
-  { slug: "hajj", name: "হজ্জ" },
-  { slug: "poribar", name: "পারিবারিক জীবন" },
-  { slug: "lenden", name: "লেনদেন" },
-];
+export default async function HomePage() {
+  const [categories, masalaList] = await Promise.all([
+    getCategories(),
+    getPublishedMasala(7), // ১টা ফিচার্ড + ৬টা সাম্প্রতিক
+  ]);
 
-const RECENT_MASALA = [
-  {
-    slug: "wudu-batil-howar-karon",
-    title: "ওযু ভঙ্গের কারণসমূহ কী কী?",
-    excerpt:
-      "ওযু ভঙ্গের প্রধান কারণগুলোর মধ্যে রয়েছে পেশাব-পায়খানার রাস্তা দিয়ে কিছু বের হওয়া, গভীর ঘুম, রক্ত প্রবাহিত হওয়া...",
-    categoryLabel: "নামাজ",
-  },
-  {
-    slug: "roja-obosthay-vul-kore-khawa",
-    title: "রোজা অবস্থায় ভুলে খেয়ে ফেললে করণীয় কী?",
-    excerpt:
-      "ভুলবশত পানাহার করলে রোজা ভঙ্গ হয় না — এই বিধানের বিস্তারিত ব্যাখ্যা ও দলিল...",
-    categoryLabel: "রোজা",
-  },
-  {
-    slug: "zakat-kar-upor-farz",
-    title: "যাকাত কার উপর ফরজ?",
-    excerpt: "নেসাব পরিমাণ সম্পদের মালিক হলে যাকাত ফরজ হয় — নেসাবের হিসাব...",
-    categoryLabel: "যাকাত",
-  },
-];
+  const [featured, ...recent] = masalaList;
 
-export default function HomePage() {
   return (
     <div>
-      {/* হিরো — সরাসরি সার্চে নিয়ে যাওয়াই এখানে মূল কাজ */}
-      <section className="border-b border-ink-900/10 bg-emerald-100/40">
-        <div className="mx-auto max-w-3xl px-4 py-14 text-center">
-          <h1 className="text-3xl leading-tight md:text-4xl">
-            সঠিক মাসআলা, নির্ভরযোগ্য সূত্রে
+      {/* হিরো — গাঢ় এমারেল্ড, নিচে খিলানের সারি দিয়ে পরের সেকশনে রূপান্তর */}
+      <section className="bg-emerald-950 pb-0 pt-14 text-cream-50">
+        <div className="mx-auto max-w-3xl px-5 text-center">
+          <p className="font-heading text-sm tracking-wide text-gold-400">
+            মাসআলা শেয়ারিং
+          </p>
+          <h1 className="mt-3 font-heading text-[2.5rem] leading-[1.15] tracking-tight md:text-5xl">
+            সঠিক মাসআলা,
+            <br />
+            নির্ভরযোগ্য সূত্রে
           </h1>
-          <p className="mx-auto mt-3 max-w-xl text-ink-600">
+          <p className="mx-auto mt-4 max-w-md text-cream-100/70">
             কোরআন, হাদিস ও ফিকহের রেফারেন্সসহ যাচাইকৃত আলেমদের দেওয়া মাসআলার সংকলন
           </p>
 
-          <form action="/search" className="relative mx-auto mt-6 max-w-md">
+          <form action="/search" className="relative mx-auto mt-7 max-w-md">
             <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
             <Input
               name="q"
               placeholder="যেমন: ওযু, রোজা, যাকাত..."
-              className="pl-9"
+              className="border-none pl-9 shadow-sm"
             />
           </form>
+
+          <div className="h-8" />
         </div>
+
+        <ArchRow />
       </section>
 
-      <div className="mx-auto max-w-5xl space-y-14 px-4 py-12">
-        {/* আজকের মাসআলা — ফিচার্ড, সিগনেচার মোটিফসহ */}
-        <section>
-          <h2 className="text-xl">আজকের মাসআলা</h2>
-          <Card accent className="mt-4">
-            <Badge tone="verified">যাচাইকৃত</Badge>
-            <h3 className="mt-3 font-heading text-xl text-emerald-950">
-              নামাজে ইমামের পেছনে সূরা ফাতিহা পড়া প্রসঙ্গে
-            </h3>
-            <p className="mt-2 text-ink-600">
-              জামাতে নামাজ পড়ার সময় ইমামের পেছনে মুক্তাদির সূরা ফাতিহা পড়া নিয়ে
-              ফিকহবিদদের মতামত ও এর পেছনের দলিলসমূহ বিস্তারিতভাবে আলোচনা করা হয়েছে...
-            </p>
-            <div className="mt-5 flex items-center justify-between">
-              <Link
-                href="/masala/imam-er-pichone-fatiha"
-                className="inline-flex items-center justify-center rounded border border-emerald-950/20 px-5 py-2.5 font-body font-medium text-emerald-950 transition-colors hover:bg-emerald-100"
-              >
-                বিস্তারিত পড়ুন
-              </Link>
-              <div className="flex items-center gap-4 text-ink-400">
-                <ShareIcon className="h-4 w-4" />
-                <PrintIcon className="h-4 w-4" />
-                <BookmarkIcon className="h-4 w-4" />
-              </div>
-            </div>
-          </Card>
-        </section>
-
-        <GeometricDivider className="max-w-xs" />
-
-        {/* ক্যাটাগরি */}
+      <div className="mx-auto max-w-5xl space-y-12 px-4 pb-12 pt-8">
+        {/* ক্যাটাগরি — হরাইজন্টাল স্ক্রল চিপ */}
         <section>
           <div className="flex items-baseline justify-between">
-            <h2 className="text-xl">জনপ্রিয় ক্যাটাগরি</h2>
+            <h2 className="text-lg text-ink-900">ক্যাটাগরি</h2>
             <Link href="/categories" className="text-sm text-emerald-700 hover:underline">
               সব দেখুন
             </Link>
           </div>
-          <div className="mt-4">
-            <CategoryGrid categories={FEATURED_CATEGORIES} />
-          </div>
-        </section>
-
-        {/* সাম্প্রতিক মাসআলা */}
-        <section>
-          <h2 className="text-xl">সাম্প্রতিক মাসআলা</h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-            {RECENT_MASALA.map((masala) => (
-              <MasalaCard key={masala.slug} {...masala} />
+          <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+            {categories.map((category) => (
+              <Link
+                key={category.slug}
+                href={`/categories/${category.slug}`}
+                className="shrink-0 whitespace-nowrap rounded-full border border-emerald-700/25 bg-emerald-100/60 px-4 py-2 text-sm text-emerald-900"
+              >
+                {category.name}
+              </Link>
             ))}
           </div>
         </section>
+
+        {/* আজকের মাসআলা — খিলান আইকনসহ ফিচার্ড */}
+        {featured && (
+          <section>
+            <ArchIcon className="text-emerald-700" />
+            <div className="mt-2 flex items-center gap-2">
+              <Badge tone="verified">যাচাইকৃত</Badge>
+              <span className="text-xs text-ink-400">আজকের মাসআলা</span>
+            </div>
+            <Link href={`/masala/${featured.slug}`} className="mt-2 block">
+              <h3 className="font-heading text-xl leading-snug text-emerald-950">
+                {featured.title}
+              </h3>
+              <p className="mt-2 line-clamp-2 text-ink-600">{featured.content[0]}</p>
+              <span className="mt-2 inline-flex items-center gap-1 text-sm text-emerald-700">
+                বিস্তারিত পড়ুন
+                <ChevronRightIcon className="h-4 w-4" />
+              </span>
+            </Link>
+          </section>
+        )}
+
+        {/* সাম্প্রতিক মাসআলা — এডিটোরিয়াল লিস্ট, কার্ড-গ্রিড না */}
+        {recent.length > 0 && (
+          <section>
+            <h2 className="text-lg text-ink-900">সাম্প্রতিক মাসআলা</h2>
+            <div className="mt-3 divide-y divide-ink-900/10 border-t border-ink-900/10">
+              {recent.map((masala) => {
+                const category = categories.find((c) => c.slug === masala.categoryId);
+                return (
+                  <Link
+                    key={masala.slug}
+                    href={`/masala/${masala.slug}`}
+                    className="flex items-start justify-between gap-4 py-4"
+                  >
+                    <div className="min-w-0">
+                      {category && (
+                        <span className="text-xs text-emerald-700">{category.name}</span>
+                      )}
+                      <h3 className="mt-0.5 font-heading text-base leading-snug text-emerald-950">
+                        {masala.title}
+                      </h3>
+                      <p className="mt-1 line-clamp-1 text-sm text-ink-600">
+                        {masala.content[0]}
+                      </p>
+                    </div>
+                    <ChevronRightIcon className="mt-1 h-4 w-4 shrink-0 text-ink-400" />
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );

@@ -8,7 +8,6 @@ export default function NewMasalaPage() {
         ← সব মাসআলা
       </Link>
       <h1 className="mt-3 font-heading text-2xl text-cream-50">নতুন মাসআলা</h1>
-
       <div className="mt-6 max-w-2xl">
         <MasalaEditor mode="create" />
       </div>

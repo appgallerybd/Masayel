@@ -1,9 +1,7 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebase/config";
-import { getUserByEmail } from "@/lib/admin-users-store";
+import { ReactNode } from "react";
+import { useAdminUser } from "@/lib/admin-user-context";
 import { UserRole } from "@/types/user";
 
 interface RoleGuardProps {
@@ -11,30 +9,13 @@ interface RoleGuardProps {
   children: ReactNode;
 }
 
-// এই কম্পোনেন্টটা /admin এর যেকোনো সাব-পেজে বসিয়ে নির্দিষ্ট রোলের জন্য
-// সীমাবদ্ধ করা যায় — যেমন এখানে /admin/users শুধু superadmin দেখতে পারবে।
-// TODO: বাস্তবে এই চেক Firestore-এর "users" কালেকশন থেকে uid দিয়ে হবে,
-// এখন ডেমোর জন্য ইমেইল দিয়ে lib/admin-users-store.ts এ খোঁজা হচ্ছে।
+// (protected)/layout.tsx সার্ভার-সাইডে ইউজারের রোল যাচাই করে AdminUserProvider-এ
+// বসিয়ে দেয় — এই কম্পোনেন্ট সেই ভেরিফায়েড রোল পড়ে নির্দিষ্ট সাব-পেজ
+// সীমাবদ্ধ করে (যেমন /admin/users শুধু superadmin)।
 export function RoleGuard({ allow, children }: RoleGuardProps) {
-  const [state, setState] = useState<"checking" | "allowed" | "denied">("checking");
+  const user = useAdminUser();
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (!firebaseUser?.email) {
-        setState("denied");
-        return;
-      }
-      const record = getUserByEmail(firebaseUser.email);
-      setState(record && allow.includes(record.role) ? "allowed" : "denied");
-    });
-    return unsubscribe;
-  }, [allow]);
-
-  if (state === "checking") {
-    return <p className="text-cream-100/60">যাচাই করা হচ্ছে...</p>;
-  }
-
-  if (state === "denied") {
+  if (!allow.includes(user.role)) {
     return (
       <div className="border border-cream-50/10 bg-emerald-950/40 p-6">
         <p className="text-cream-50">এই পেজটি দেখার অনুমতি তোমার নেই।</p>

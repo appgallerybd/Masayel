@@ -2,15 +2,17 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getAllMasala } from "@/lib/admin-store";
-import { MockMasalaDetail } from "@/lib/mock-data";
+import { Masala } from "@/types/masala";
 import { cn } from "@/lib/utils";
 
 export default function AdminMasalaListPage() {
-  const [masalaList, setMasalaList] = useState<MockMasalaDetail[] | null>(null);
+  const [masalaList, setMasalaList] = useState<Masala[] | null>(null);
 
   useEffect(() => {
-    setMasalaList(getAllMasala());
+    fetch("/api/admin/masala")
+      .then((r) => r.json())
+      .then(setMasalaList)
+      .catch(() => setMasalaList([]));
   }, []);
 
   return (
@@ -33,7 +35,6 @@ export default function AdminMasalaListPage() {
           <thead className="bg-cream-50/5 text-cream-100/60">
             <tr>
               <th className="px-4 py-3 font-normal">শিরোনাম</th>
-              <th className="px-4 py-3 font-normal">ক্যাটাগরি</th>
               <th className="px-4 py-3 font-normal">স্ট্যাটাস</th>
               <th className="px-4 py-3 font-normal"></th>
             </tr>
@@ -41,7 +42,7 @@ export default function AdminMasalaListPage() {
           <tbody>
             {masalaList === null && (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-cream-100/50">
+                <td colSpan={3} className="px-4 py-6 text-center text-cream-100/50">
                   লোড হচ্ছে...
                 </td>
               </tr>
@@ -49,7 +50,7 @@ export default function AdminMasalaListPage() {
 
             {masalaList !== null && masalaList.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-cream-100/50">
+                <td colSpan={3} className="px-4 py-6 text-center text-cream-100/50">
                   এখনো কোনো মাসআলা যোগ করা হয়নি।
                 </td>
               </tr>
@@ -58,7 +59,6 @@ export default function AdminMasalaListPage() {
             {masalaList?.map((masala) => (
               <tr key={masala.slug} className="border-t border-cream-50/10">
                 <td className="px-4 py-3 text-cream-50">{masala.title}</td>
-                <td className="px-4 py-3 text-cream-100/70">{masala.categoryLabel}</td>
                 <td className="px-4 py-3">
                   <span
                     className={cn(
@@ -72,10 +72,7 @@ export default function AdminMasalaListPage() {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <Link
-                    href={`/admin/masala/${masala.slug}`}
-                    className="text-emerald-300 hover:underline"
-                  >
+                  <Link href={`/admin/masala/${masala.slug}`} className="text-emerald-300 hover:underline">
                     এডিট
                   </Link>
                 </td>

@@ -1,16 +1,21 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
+import { FormEvent, Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
 import { Input } from "@/components/ui/input";
 
-export default function AdminLoginPage() {
+function AdminLoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    searchParams.get("error") === "no-access"
+      ? "তোমার অ্যাকাউন্টের অ্যাডমিন প্যানেল দেখার অনুমতি নেই।"
+      : null
+  );
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
@@ -20,13 +25,17 @@ export default function AdminLoginPage() {
 
     try {
       const credential = await signInWithEmailAndPassword(auth, email, password);
-
-      // Firebase ID টোকেন নিয়ে সার্ভারে সেশন কুকি বসানো — middleware.ts এটাই চেক করে।
-      // TODO: এখানে একটা /api/session route বানিয়ে httpOnly কুকি সেট করতে হবে
-      // (firebase-admin দিয়ে createSessionCookie ব্যবহার করে), ক্লায়েন্ট-সাইড
-      // কুকি নিরাপদ নয় — এটা শুধু ধাপে ধাপে এগোনোর জন্য অস্থায়ী।
       const idToken = await credential.user.getIdToken();
-      document.cookie = `session=${idToken}; path=/; max-age=3600; samesite=lax`;
+
+      const res = await fetch("/api/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
+
+      if (!res.ok) {
+        throw new Error("session exchange failed");
+      }
 
       router.push("/admin");
       router.refresh();
@@ -88,5 +97,13 @@ export default function AdminLoginPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function AdminLoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminLoginForm />
+    </Suspense>
   );
 }

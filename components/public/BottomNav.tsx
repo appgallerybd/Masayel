@@ -52,10 +52,10 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-20 border-t border-ink-900/10 bg-cream-50/95 backdrop-blur md:hidden"
+      className="fixed inset-x-4 bottom-4 z-20 md:hidden"
       aria-label="প্রধান নেভিগেশন"
     >
-      <div className="mx-auto flex max-w-5xl items-stretch justify-between px-2">
+      <div className="mx-auto flex max-w-sm items-stretch justify-between rounded-full bg-emerald-950 px-2 py-1.5 shadow-lg shadow-emerald-950/20">
         {NAV_ITEMS.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
@@ -64,12 +64,12 @@ export function BottomNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-1 flex-col items-center gap-1 py-2.5 text-xs font-body",
-                isActive ? "text-emerald-950" : "text-ink-400"
+                "flex flex-1 flex-col items-center gap-0.5 rounded-full py-2 text-[11px] font-body transition-colors",
+                isActive ? "text-gold-400" : "text-cream-100/60"
               )}
               aria-current={isActive ? "page" : undefined}
             >
-              <Icon className={cn("h-5 w-5", isActive && "text-emerald-950")} />
+              <Icon className={cn("h-5 w-5", isActive && "text-gold-400")} />
               {item.label}
             </Link>
           );

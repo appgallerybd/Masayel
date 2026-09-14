@@ -16,13 +16,13 @@ export interface Masala {
   id: string;
   slug: string;
   title: string;
-  content: string; // markdown/rich-text
-  categoryId: string;
+  content: string[]; // প্যারাগ্রাফ ধরে ধরে
+  categoryId: string; // = category ডকুমেন্টের slug/id
   tags: string[];
   quranRefs: QuranReference[];
   hadithRefs: HadithReference[];
   fiqhSchool?: FiqhSchool;
-  scholarId?: string;
+  scholarId?: string; // = scholar ডকুমেন্টের slug/id
   status: "draft" | "published";
   views: number;
   createdAt: string;

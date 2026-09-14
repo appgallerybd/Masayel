@@ -1,33 +1,27 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
 import { MasalaCard } from "@/components/public/MasalaCard";
-import { SCHOLARS, MASALA_DETAILS } from "@/lib/mock-data";
+import { getScholarBySlug, getMasalaByScholar } from "@/lib/firebase/reads";
 
 interface ScholarPageProps {
   params: { slug: string };
 }
 
-export function generateMetadata({ params }: ScholarPageProps) {
-  const scholar = SCHOLARS.find((s) => s.slug === params.slug);
-  return { title: scholar?.name ?? "প্রোফাইল পাওয়া যায়নি" };
+export async function generateMetadata({ params }: ScholarPageProps) {
+  const scholar = await getScholarBySlug(params.slug);
+  return { title: scholar?.name ?? "আলেম পাওয়া যায়নি" };
 }
 
-export default function ScholarDetailPage({ params }: ScholarPageProps) {
-  const scholar = SCHOLARS.find((s) => s.slug === params.slug);
+export default async function ScholarDetailPage({ params }: ScholarPageProps) {
+  const scholar = await getScholarBySlug(params.slug);
+  if (!scholar) notFound();
 
-  if (!scholar) {
-    notFound();
-  }
-
-  const answeredMasala = Object.values(MASALA_DETAILS).filter(
-    (m) => m.scholarSlug === scholar.slug
-  );
+  const answeredMasala = await getMasalaByScholar(params.slug);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
       <Link href="/scholars" className="text-sm text-emerald-700 hover:underline">
-        ← মুফতি/আলেমগণ
+        ← সব আলেম
       </Link>
 
       <div className="mt-4 flex items-center gap-4">
@@ -36,41 +30,32 @@ export default function ScholarDetailPage({ params }: ScholarPageProps) {
         </div>
         <div>
           <h1 className="text-2xl">{scholar.name}</h1>
-          <Badge tone="verified" className="mt-1">
-            {scholar.designation}
-          </Badge>
+          <p className="text-ink-600">{scholar.designation}</p>
         </div>
       </div>
 
-      <p className="mt-6 leading-relaxed text-ink-900">{scholar.bio}</p>
+      {scholar.bio && <p className="mt-6 leading-relaxed text-ink-900">{scholar.bio}</p>}
 
-      <div className="mt-6">
-        <h2 className="text-lg text-emerald-950">শিক্ষাগত যোগ্যতা</h2>
-        <ul className="mt-2 space-y-1 text-ink-600">
-          {scholar.credentials.map((credential) => (
-            <li key={credential}>• {credential}</li>
-          ))}
-        </ul>
-      </div>
+      {scholar.credentials && (
+        <p className="mt-3 text-sm text-ink-600">{scholar.credentials}</p>
+      )}
 
-      <div className="mt-10">
-        <h2 className="text-lg text-emerald-950">উত্তর দেওয়া মাসআলা</h2>
-        {answeredMasala.length === 0 ? (
-          <p className="mt-2 text-ink-600">এখনো কোনো মাসআলা যুক্ত হয়নি।</p>
-        ) : (
+      {answeredMasala.length > 0 && (
+        <section className="mt-10">
+          <h2 className="text-xl">এই আলেমের উত্তর দেওয়া মাসআলা</h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            {answeredMasala.map((m) => (
+            {answeredMasala.map((masala) => (
               <MasalaCard
-                key={m.slug}
-                slug={m.slug}
-                title={m.title}
-                excerpt={m.content[0]}
-                categoryLabel={m.categoryLabel}
+                key={masala.slug}
+                slug={masala.slug}
+                title={masala.title}
+                excerpt={masala.content[0] ?? ""}
+                categoryLabel=""
               />
             ))}
           </div>
-        )}
-      </div>
+        </section>
+      )}
     </div>
   );
 }

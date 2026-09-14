@@ -22,7 +22,7 @@ export function Sidebar() {
 
   async function handleLogout() {
     await signOut(auth);
-    document.cookie = "session=; path=/; max-age=0";
+    await fetch("/api/session", { method: "DELETE" });
     router.push("/admin/login");
   }
 

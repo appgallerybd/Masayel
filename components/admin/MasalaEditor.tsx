@@ -1,18 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
-import { CATEGORIES, SCHOLARS, QuranRef, HadithRef, MockMasalaDetail } from "@/lib/mock-data";
-import { upsertMasala, deleteMasala } from "@/lib/admin-store";
+import { Category } from "@/types/category";
+import { Scholar } from "@/types/scholar";
+import { QuranReference, HadithReference, Masala } from "@/types/masala";
 
 const FIQH_SCHOOLS = ["হানাফি", "শাফেয়ি", "মালেকি", "হাম্বলি"];
 
 interface MasalaEditorProps {
   mode: "create" | "edit";
-  initial?: MockMasalaDetail;
+  initial?: Masala;
 }
 
 function slugify(title: string) {
@@ -26,21 +27,36 @@ function slugify(title: string) {
 export function MasalaEditor({ mode, initial }: MasalaEditorProps) {
   const router = useRouter();
 
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [scholars, setScholars] = useState<Scholar[]>([]);
+
   const [title, setTitle] = useState(initial?.title ?? "");
-  const [categorySlug, setCategorySlug] = useState(initial?.categorySlug ?? CATEGORIES[0].slug);
+  const [categoryId, setCategoryId] = useState(initial?.categoryId ?? "");
   const [fiqhSchool, setFiqhSchool] = useState(initial?.fiqhSchool ?? FIQH_SCHOOLS[0]);
-  const [scholarSlug, setScholarSlug] = useState(initial?.scholarSlug ?? SCHOLARS[0].slug);
+  const [scholarId, setScholarId] = useState(initial?.scholarId ?? "");
   const [status, setStatus] = useState<"draft" | "published">(initial?.status ?? "draft");
   const [tagsText, setTagsText] = useState(initial?.tags.join(", ") ?? "");
   const [contentText, setContentText] = useState(initial?.content.join("\n\n") ?? "");
-  const [quranRefs, setQuranRefs] = useState<QuranRef[]>(initial?.quranRefs ?? []);
-  const [hadithRefs, setHadithRefs] = useState<HadithRef[]>(initial?.hadithRefs ?? []);
+  const [quranRefs, setQuranRefs] = useState<QuranReference[]>(initial?.quranRefs ?? []);
+  const [hadithRefs, setHadithRefs] = useState<HadithReference[]>(initial?.hadithRefs ?? []);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/categories").then((r) => r.json()).then((data) => {
+      setCategories(data);
+      setCategoryId((current) => current || data[0]?.slug || "");
+    });
+    fetch("/api/scholars").then((r) => r.json()).then((data) => {
+      setScholars(data);
+      setScholarId((current) => current || data[0]?.slug || "");
+    });
+  }, []);
 
   function addQuranRef() {
     setQuranRefs((refs) => [...refs, { surah: "", ayah: "", text: "" }]);
   }
-  function updateQuranRef(index: number, patch: Partial<QuranRef>) {
+  function updateQuranRef(index: number, patch: Partial<QuranReference>) {
     setQuranRefs((refs) => refs.map((r, i) => (i === index ? { ...r, ...patch } : r)));
   }
   function removeQuranRef(index: number) {
@@ -50,27 +66,25 @@ export function MasalaEditor({ mode, initial }: MasalaEditorProps) {
   function addHadithRef() {
     setHadithRefs((refs) => [...refs, { source: "", number: "", text: "" }]);
   }
-  function updateHadithRef(index: number, patch: Partial<HadithRef>) {
+  function updateHadithRef(index: number, patch: Partial<HadithReference>) {
     setHadithRefs((refs) => refs.map((r, i) => (i === index ? { ...r, ...patch } : r)));
   }
   function removeHadithRef(index: number) {
     setHadithRefs((refs) => refs.filter((_, i) => i !== index));
   }
 
-  function handleSave(e: React.FormEvent) {
+  async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
+    setError(null);
 
-    const category = CATEGORIES.find((c) => c.slug === categorySlug)!;
     const slug = initial?.slug ?? slugify(title);
-
-    const record: MockMasalaDetail = {
+    const payload = {
       slug,
       title,
-      categorySlug,
-      categoryLabel: category.name,
+      categoryId,
       fiqhSchool,
-      scholarSlug,
+      scholarId,
       status,
       tags: tagsText.split(",").map((t) => t.trim()).filter(Boolean),
       content: contentText.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean),
@@ -78,23 +92,48 @@ export function MasalaEditor({ mode, initial }: MasalaEditorProps) {
       hadithRefs: hadithRefs.filter((r) => r.text.trim() !== ""),
     };
 
-    // TODO: Firestore যুক্ত হলে এখানে addDoc/updateDoc(collection(db, "masala"), record) বসবে
-    upsertMasala(record);
+    const res = await fetch(
+      mode === "create" ? "/api/admin/masala" : `/api/admin/masala/${slug}`,
+      {
+        method: mode === "create" ? "POST" : "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }
+    );
 
     setSaving(false);
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(body.error ?? "সংরক্ষণ ব্যর্থ হয়েছে");
+      return;
+    }
+
     router.push("/admin/masala");
+    router.refresh();
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!initial) return;
     if (!window.confirm("এই মাসআলাটি মুছে ফেলতে চাও?")) return;
-    // TODO: Firestore যুক্ত হলে deleteDoc(doc(db, "masala", initial.slug)) বসবে
-    deleteMasala(initial.slug);
+
+    const res = await fetch(`/api/admin/masala/${initial.slug}`, { method: "DELETE" });
+    if (!res.ok) {
+      setError("মুছে ফেলা যায়নি");
+      return;
+    }
     router.push("/admin/masala");
+    router.refresh();
   }
 
   return (
     <form onSubmit={handleSave} className="space-y-6">
+      {error && (
+        <p className="border border-red-400/30 bg-red-400/10 px-4 py-2 text-sm text-red-300">
+          {error}
+        </p>
+      )}
+
       <div>
         <label className="mb-1.5 block text-sm text-cream-100/70">শিরোনাম</label>
         <Input
@@ -110,11 +149,11 @@ export function MasalaEditor({ mode, initial }: MasalaEditorProps) {
         <div>
           <label className="mb-1.5 block text-sm text-cream-100/70">ক্যাটাগরি</label>
           <Select
-            value={categorySlug}
-            onChange={(e) => setCategorySlug(e.target.value)}
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
             className="bg-cream-50 text-ink-900"
           >
-            {CATEGORIES.map((c) => (
+            {categories.map((c) => (
               <option key={c.slug} value={c.slug}>
                 {c.name}
               </option>
@@ -140,11 +179,11 @@ export function MasalaEditor({ mode, initial }: MasalaEditorProps) {
         <div>
           <label className="mb-1.5 block text-sm text-cream-100/70">উত্তরদাতা আলেম</label>
           <Select
-            value={scholarSlug}
-            onChange={(e) => setScholarSlug(e.target.value)}
+            value={scholarId}
+            onChange={(e) => setScholarId(e.target.value)}
             className="bg-cream-50 text-ink-900"
           >
-            {SCHOLARS.map((s) => (
+            {scholars.map((s) => (
               <option key={s.slug} value={s.slug}>
                 {s.name}
               </option>
@@ -166,15 +205,10 @@ export function MasalaEditor({ mode, initial }: MasalaEditorProps) {
         />
       </div>
 
-      {/* কুরআনের দলিল */}
       <div>
         <div className="flex items-center justify-between">
           <label className="text-sm text-cream-100/70">কুরআনের দলিল</label>
-          <button
-            type="button"
-            onClick={addQuranRef}
-            className="text-sm text-gold-400 hover:underline"
-          >
+          <button type="button" onClick={addQuranRef} className="text-sm text-gold-400 hover:underline">
             + যোগ করুন
           </button>
         </div>
@@ -212,15 +246,10 @@ export function MasalaEditor({ mode, initial }: MasalaEditorProps) {
         </div>
       </div>
 
-      {/* হাদিসের দলিল */}
       <div>
         <div className="flex items-center justify-between">
           <label className="text-sm text-cream-100/70">হাদিসের দলিল</label>
-          <button
-            type="button"
-            onClick={addHadithRef}
-            className="text-sm text-gold-400 hover:underline"
-          >
+          <button type="button" onClick={addHadithRef} className="text-sm text-gold-400 hover:underline">
             + যোগ করুন
           </button>
         </div>
@@ -290,11 +319,7 @@ export function MasalaEditor({ mode, initial }: MasalaEditorProps) {
         </button>
 
         {mode === "edit" && (
-          <button
-            type="button"
-            onClick={handleDelete}
-            className="text-sm text-red-400 hover:underline"
-          >
+          <button type="button" onClick={handleDelete} className="text-sm text-red-400 hover:underline">
             মুছে ফেলুন
           </button>
         )}

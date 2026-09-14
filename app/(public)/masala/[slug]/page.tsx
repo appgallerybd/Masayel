@@ -1,42 +1,41 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
-import { GeometricDivider } from "@/components/ui/divider";
 import { ReferenceBlock } from "@/components/public/ReferenceBlock";
 import { BookmarkButton } from "@/components/public/BookmarkButton";
 import { ShareButtons } from "@/components/public/ShareButtons";
-import { MASALA_DETAILS, SCHOLARS } from "@/lib/mock-data";
+import { getCategoryBySlug, getMasalaBySlug, getScholarBySlug } from "@/lib/firebase/reads";
 
 interface MasalaPageProps {
   params: { slug: string };
 }
 
-export function generateMetadata({ params }: MasalaPageProps) {
-  const masala = MASALA_DETAILS[params.slug];
+export async function generateMetadata({ params }: MasalaPageProps) {
+  const masala = await getMasalaBySlug(params.slug);
   return { title: masala?.title ?? "মাসআলা পাওয়া যায়নি" };
 }
 
-export default function MasalaDetailPage({ params }: MasalaPageProps) {
-  const masala = MASALA_DETAILS[params.slug];
+export default async function MasalaDetailPage({ params }: MasalaPageProps) {
+  const masala = await getMasalaBySlug(params.slug);
+  if (!masala) notFound();
 
-  if (!masala) {
-    notFound();
-  }
-
-  const scholar = SCHOLARS.find((s) => s.slug === masala.scholarSlug);
+  const [category, scholar] = await Promise.all([
+    getCategoryBySlug(masala.categoryId),
+    masala.scholarId ? getScholarBySlug(masala.scholarId) : Promise.resolve(null),
+  ]);
 
   return (
     <article className="mx-auto max-w-2xl px-4 py-12">
       <Link
-        href={`/categories/${masala.categorySlug}`}
+        href={`/categories/${masala.categoryId}`}
         className="text-sm text-emerald-700 hover:underline"
       >
-        ← {masala.categoryLabel}
+        ← {category?.name ?? "ক্যাটাগরি"}
       </Link>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        <Badge>{masala.categoryLabel}</Badge>
-        <Badge>{masala.fiqhSchool}</Badge>
+        {category && <Badge>{category.name}</Badge>}
+        {masala.fiqhSchool && <Badge>{masala.fiqhSchool}</Badge>}
       </div>
 
       <h1 className="mt-4 text-2xl leading-snug md:text-3xl">{masala.title}</h1>
@@ -56,7 +55,6 @@ export default function MasalaDetailPage({ params }: MasalaPageProps) {
         <BookmarkButton slug={masala.slug} />
       </div>
 
-      {/* মূল বিবরণ */}
       <div className="mt-8 space-y-4">
         {masala.content.map((paragraph, i) => (
           <p key={i} className="leading-relaxed text-ink-900">
@@ -65,7 +63,6 @@ export default function MasalaDetailPage({ params }: MasalaPageProps) {
         ))}
       </div>
 
-      {/* কোরআনের রেফারেন্স */}
       {masala.quranRefs.length > 0 && (
         <section className="mt-8 space-y-3">
           <h2 className="text-lg text-emerald-950">কুরআনের দলিল</h2>
@@ -80,7 +77,6 @@ export default function MasalaDetailPage({ params }: MasalaPageProps) {
         </section>
       )}
 
-      {/* হাদিসের রেফারেন্স */}
       {masala.hadithRefs.length > 0 && (
         <section className="mt-8 space-y-3">
           <h2 className="text-lg text-emerald-950">হাদিসের দলিল</h2>
@@ -95,13 +91,12 @@ export default function MasalaDetailPage({ params }: MasalaPageProps) {
         </section>
       )}
 
-      <GeometricDivider className="mt-10 max-w-xs" />
-
-      {/* ট্যাগ */}
-      <div className="mt-6 flex flex-wrap gap-2">
-        {masala.tags.map((tag) => (
-          <Badge key={tag}>{tag}</Badge>
-        ))}
+      <div className="mt-10 border-t border-ink-900/10 pt-6">
+        <div className="flex flex-wrap gap-2">
+          {masala.tags.map((tag) => (
+            <Badge key={tag}>{tag}</Badge>
+          ))}
+        </div>
       </div>
     </article>
   );

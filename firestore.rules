@@ -1,0 +1,12 @@
+rules_version = '2';
+
+// সব ডেটা অপারেশন Next.js সার্ভার থেকে firebase-admin দিয়ে হয় (যেটা এই রুলস
+// বাইপাস করে, কারণ admin SDK একটা সার্ভিস অ্যাকাউন্ট দিয়ে চলে)। তাই ক্লায়েন্ট
+// থেকে সরাসরি Firestore অ্যাক্সেস সম্পূর্ণ বন্ধ রাখা নিরাপদ ও যথেষ্ট।
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

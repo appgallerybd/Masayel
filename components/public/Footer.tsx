@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { GeometricDivider } from "@/components/ui/divider";
 
 const FOOTER_LINKS = [
   { href: "/about", label: "আমাদের সম্পর্কে" },
@@ -11,8 +10,6 @@ export function Footer() {
   return (
     <footer className="mt-16 border-t border-ink-900/10 pb-20 pt-10 md:pb-10">
       <div className="mx-auto max-w-5xl px-4">
-        <GeometricDivider className="mb-8 max-w-xs" />
-
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
           <div>
             <p className="font-heading text-lg text-emerald-950">মাসআলা শেয়ারিং</p>

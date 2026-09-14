@@ -1,11 +1,11 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
-import { CATEGORIES } from "@/lib/mock-data";
 import { questionSchema } from "@/lib/validators";
+import { Category } from "@/types/category";
 
 type FieldErrors = Partial<Record<"questionText" | "categorySlug" | "askedByEmail", string>>;
 
@@ -16,8 +16,16 @@ export default function AskPage() {
   const [askedByEmail, setAskedByEmail] = useState("");
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitted, setSubmitted] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
 
-  function handleSubmit(e: FormEvent) {
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then(setCategories)
+      .catch(() => setCategories([]));
+  }, []);
+
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
 
     const result = questionSchema.safeParse({
@@ -39,9 +47,16 @@ export default function AskPage() {
 
     setErrors({});
 
-    // TODO: Firebase Firestore-এর "questions" কালেকশনে লেখা হবে (স্ট্যাটাস: "pending")
-    // ব্যাকএন্ড ওয়্যারিং হলে এখানে addDoc(collection(db, "questions"), result.data) বসবে।
-    console.log("প্রশ্ন সাবমিট হলো:", result.data);
+    const res = await fetch("/api/questions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(result.data),
+    });
+
+    if (!res.ok) {
+      setErrors({ questionText: "প্রশ্ন পাঠাতে সমস্যা হয়েছে, আবার চেষ্টা করো।" });
+      return;
+    }
 
     setSubmitted(true);
     setQuestionText("");
@@ -87,7 +102,7 @@ export default function AskPage() {
             onChange={(e) => setCategorySlug(e.target.value)}
           >
             <option value="">ক্যাটাগরি নির্বাচন করুন</option>
-            {CATEGORIES.map((c) => (
+            {categories.map((c) => (
               <option key={c.slug} value={c.slug}>
                 {c.name}
               </option>

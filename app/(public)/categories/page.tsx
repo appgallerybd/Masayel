@@ -1,19 +1,21 @@
 import Link from "next/link";
 import { ChevronRightIcon } from "@/components/ui/icons";
-import { CATEGORIES } from "@/lib/mock-data";
+import { getCategories } from "@/lib/firebase/reads";
 
 export const metadata = {
   title: "সব ক্যাটাগরি",
 };
 
-export default function CategoriesPage() {
+export default async function CategoriesPage() {
+  const categories = await getCategories();
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-12">
       <h1 className="text-2xl">সব ক্যাটাগরি</h1>
       <p className="mt-1 text-ink-600">বিষয়ভিত্তিকভাবে মাসআলা খুঁজে নিন</p>
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        {CATEGORIES.map((category) => (
+        {categories.map((category) => (
           <Link
             key={category.slug}
             href={`/categories/${category.slug}`}
@@ -21,12 +23,14 @@ export default function CategoriesPage() {
           >
             <div>
               <p className="font-heading text-lg text-emerald-950">{category.name}</p>
-              <p className="mt-0.5 text-sm text-ink-600">{category.description}</p>
-              <p className="mt-1 text-xs text-ink-400">{category.count}টি মাসআলা</p>
             </div>
             <ChevronRightIcon className="h-5 w-5 shrink-0 text-ink-400" />
           </Link>
         ))}
+
+        {categories.length === 0 && (
+          <p className="text-ink-600">এখনো কোনো ক্যাটাগরি যোগ করা হয়নি।</p>
+        )}
       </div>
     </div>
   );
