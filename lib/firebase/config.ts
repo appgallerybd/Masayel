@@ -4,12 +4,12 @@ import { getAuth } from "firebase/auth";
 
 // .env.local থেকে আসবে — কখনো হার্ডকোড করবে না বা গিটে পুশ করবে না
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  apiKey: "AIzaSyD7-LZhaluIxH6KB9tif67oMpqZx49IqgI",
+  authDomain: "masayel-d0781.firebaseapp.com",
+  projectId: "masayel-d0781",
+  storageBucket: "masayel-d0781.firebasestorage.app",
+  messagingSenderId: "1060573817228",
+  appId: "1:1060573817228:web:daa85ab0cb2d7013720ea9"
 };
 
 // Next.js hot-reload-এ বারবার initializeApp() যাতে না হয়
