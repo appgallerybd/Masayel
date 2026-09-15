@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { Sidebar } from "@/components/admin/Sidebar";
+import { AdminShell } from "@/components/admin/AdminShell";
 import { AdminUserProvider } from "@/lib/admin-user-context";
 import { getSessionUser } from "@/lib/admin-session";
 
@@ -25,10 +25,7 @@ export default async function ProtectedAdminLayout({
 
   return (
     <AdminUserProvider value={user}>
-      <div className="flex min-h-screen bg-ink-900 text-cream-50">
-        <Sidebar />
-        <main className="flex-1 p-6">{children}</main>
-      </div>
+      <AdminShell>{children}</AdminShell>
     </AdminUserProvider>
   );
 }

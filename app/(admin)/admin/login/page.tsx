@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
 import { Input } from "@/components/ui/input";
+import { ArchIcon } from "@/components/ui/arch";
 
 function AdminLoginForm() {
   const router = useRouter();
@@ -49,14 +50,18 @@ function AdminLoginForm() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-ink-900 px-4">
       <div className="w-full max-w-sm">
-        <h1 className="text-center font-heading text-2xl text-cream-50">
+        <div className="flex justify-center">
+          <ArchIcon className="h-10 w-10 text-gold-400" />
+        </div>
+        <h1 className="mt-4 text-center font-heading text-2xl text-cream-50">
           অ্যাডমিন লগইন
         </h1>
         <p className="mt-1 text-center text-sm text-cream-100/60">
           মাসআলা শেয়ারিং — অ্যাডমিন প্যানেল
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+        <div className="mt-8 border border-cream-50/10 bg-emerald-950/40 p-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="email" className="mb-1.5 block text-sm text-cream-100/70">
               ইমেইল
@@ -94,7 +99,8 @@ function AdminLoginForm() {
           >
             {loading ? "লগইন হচ্ছে..." : "লগইন করুন"}
           </button>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );
