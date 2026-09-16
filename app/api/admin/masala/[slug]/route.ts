@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
 import { COLLECTIONS } from "@/lib/firebase/collections";
+import { requireRole } from "@/lib/admin-session";
 import { masalaSchema } from "@/lib/validators";
 
 const MASALA_MANAGER_ROLES = ["superadmin", "admin", "moderator"] as const;
@@ -35,13 +36,14 @@ export async function PUT(request: NextRequest, { params }: { params: { slug: st
   const existing = await docRef.get();
   if (!existing.exists) return Response.json({ error: "পাওয়া যায়নি" }, { status: 404 });
 
+  const old = existing.data() ?? {};
   const updated = {
-    ...existing.data(),
+    ...old,
     ...result.data,
-    id: existing.data()?.id ?? params.slug,
+    id: old.id ?? params.slug,
     slug: params.slug,
-    views: existing.data()?.views ?? 0,
-    createdAt: existing.data()?.createdAt ?? new Date().toISOString(),
+    views: old.views ?? 0,
+    createdAt: old.createdAt ?? new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
 
