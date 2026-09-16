@@ -18,17 +18,27 @@ export async function POST(request: NextRequest) {
     const userDoc = await userRef.get();
 
     if (!userDoc.exists) {
+      const email = (decoded.email ?? "").trim().toLowerCase();
+      const inviteRef = email
+        ? adminDb.collection("users").doc(`invite:${email}`)
+        : null;
+      const inviteDoc = inviteRef ? await inviteRef.get() : null;
+      const invite = inviteDoc?.exists ? inviteDoc.data() : null;
+
       await userRef.set({
         uid: decoded.uid,
-        email: decoded.email ?? "",
-        name: decoded.name ?? decoded.email ?? "",
-        role: "user",
-        bookmarks: [],
+        email: decoded.email ?? invite?.email ?? "",
+        name: decoded.name ?? invite?.name ?? decoded.email ?? "",
+        role: invite?.role ?? "user",
+        bookmarks: invite?.bookmarks ?? [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
+
+      if (inviteDoc?.exists && inviteRef) {
+        await inviteRef.delete();
+      }
     } else {
-      // Preserve an existing role/bookmarks record; never downgrade it to user.
       await userRef.set(
         {
           email: decoded.email ?? userDoc.data()?.email ?? "",
