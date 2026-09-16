@@ -2,33 +2,51 @@ import { NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
 
-const SESSION_EXPIRES_IN = 60 * 60 * 24 * 5 * 1000; // ৫ দিন (মিলিসেকেন্ডে)
+const SESSION_EXPIRES_IN = 60 * 60 * 24 * 5 * 1000;
 
 export async function POST(request: NextRequest) {
-  const { idToken } = await request.json();
-
-  if (!idToken) {
-    return Response.json({ error: "idToken প্রয়োজন" }, { status: 400 });
-  }
-
   try {
-    const decoded = await adminAuth.verifyIdToken(idToken);
+    const body = await request.json();
+    const idToken = typeof body?.idToken === "string" ? body.idToken : "";
 
-    // প্রথমবার সাইন-ইন করলে users ডকুমেন্ট না-ও থাকতে পারে — ডিফল্ট রোল
-    // "user" দিয়ে তৈরি করে দেওয়া হচ্ছে। অ্যাডমিন প্যানেলে ঢোকার জন্য
-    // superadmin থেকে ম্যানুয়ালি রোল আপগ্রেড করতে হবে (/admin/users থেকে)।
+    if (!idToken) {
+      return Response.json({ error: "idToken প্রয়োজন" }, { status: 400 });
+    }
+
+    const decoded = await adminAuth.verifyIdToken(idToken);
     const userRef = adminDb.collection("users").doc(decoded.uid);
     const userDoc = await userRef.get();
 
     if (!userDoc.exists) {
+      const email = (decoded.email ?? "").trim().toLowerCase();
+      const inviteRef = email
+        ? adminDb.collection("users").doc(`invite:${email}`)
+        : null;
+      const inviteDoc = inviteRef ? await inviteRef.get() : null;
+      const invite = inviteDoc?.exists ? inviteDoc.data() : null;
+
       await userRef.set({
         uid: decoded.uid,
-        email: decoded.email ?? "",
-        name: decoded.name ?? decoded.email ?? "",
-        role: "user",
-        bookmarks: [],
+        email: decoded.email ?? invite?.email ?? "",
+        name: decoded.name ?? invite?.name ?? decoded.email ?? "",
+        role: invite?.role ?? "user",
+        bookmarks: invite?.bookmarks ?? [],
         createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       });
+
+      if (inviteDoc?.exists && inviteRef) {
+        await inviteRef.delete();
+      }
+    } else {
+      await userRef.set(
+        {
+          email: decoded.email ?? userDoc.data()?.email ?? "",
+          name: decoded.name ?? userDoc.data()?.name ?? "",
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
     }
 
     const sessionCookie = await adminAuth.createSessionCookie(idToken, {
