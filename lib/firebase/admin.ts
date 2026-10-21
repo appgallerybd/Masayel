@@ -1,24 +1,42 @@
-import { initializeApp, getApps, cert, App } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
-import { getAuth } from "firebase-admin/auth";
+import { initializeApp, getApps, cert, type App } from "firebase-admin/app";
+import { getFirestore, type Firestore } from "firebase-admin/firestore";
+import { getAuth, type Auth } from "firebase-admin/auth";
 
-// এটা শুধু সার্ভার-সাইডে (API route/middleware) ব্যবহার হবে।
-// FIREBASE_SERVICE_ACCOUNT_KEY — Firebase কনসোল থেকে ডাউনলোড করা
-// service-account JSON, .env.local-এ base64/স্ট্রিং হিসেবে রাখা হবে।
+function parseServiceAccount() {
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" && parsed.project_id ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export function isFirebaseConfigured(): boolean {
+  return Boolean(parseServiceAccount());
+}
 
 function getAdminApp(): App {
+  if (!isFirebaseConfigured()) {
+    throw new Error("Firebase is not configured. Add FIREBASE_SERVICE_ACCOUNT_KEY to enable database operations.");
+  }
   if (getApps().length) return getApps()[0];
+  return initializeApp({ credential: cert(parseServiceAccount()!) });
+}
 
-  const serviceAccount = JSON.parse(
-    process.env.FIREBASE_SERVICE_ACCOUNT_KEY || "{}"
-  );
-
-  return initializeApp({
-    credential: cert(serviceAccount),
+function lazyService<T extends object>(factory: () => T): T {
+  return new Proxy({} as T, {
+    get(_target, property) {
+      const service = factory() as T & Record<PropertyKey, unknown>;
+      const value = service[property];
+      return typeof value === "function" ? value.bind(service) : value;
+    },
   });
 }
 
-const adminApp = getAdminApp();
-
-export const adminDb = getFirestore(adminApp);
-export const adminAuth = getAuth(adminApp);
+// Lazy initialization lets public pages and Vercel Preview render without Firebase.
+// Database-dependent actions must check isFirebaseConfigured() and return a clear
+// unavailable response rather than pretending that a write succeeded.
+export const adminDb = lazyService<Firestore>(() => getFirestore(getAdminApp()));
+export const adminAuth = lazyService<Auth>(() => getAuth(getAdminApp()));
