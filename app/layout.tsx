@@ -17,6 +17,7 @@ const hindSiliguri = Hind_Siliguri({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://masael24.com"),
   title: {
     default: "মাসায়েল২৪ | নির্ভরযোগ্য দ্বীনি মাসআলা ও ফতোয়া",
     template: "%s | মাসায়েল২৪",
