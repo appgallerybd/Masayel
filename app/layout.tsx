@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Noto_Serif_Bengali, Hind_Siliguri } from "next/font/google";
 import "./globals.css";
 
-// হেডিং ফন্ট
 const notoSerifBengali = Noto_Serif_Bengali({
   subsets: ["bengali"],
   weight: ["500", "600", "700"],
@@ -10,20 +9,41 @@ const notoSerifBengali = Noto_Serif_Bengali({
   display: "swap",
 });
 
-// বডি ফন্ট
 const hindSiliguri = Hind_Siliguri({
   subsets: ["bengali"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-hind-siliguri",
   display: "swap",
 });
 
 export const metadata: Metadata = {
   title: {
-    default: "মাসআলা শেয়ারিং",
-    template: "%s | মাসআলা শেয়ারিং",
+    default: "মাসায়েল২৪ | নির্ভরযোগ্য দ্বীনি মাসআলা ও ফতোয়া",
+    template: "%s | মাসায়েল২৪",
   },
-  description: "কোরআন, হাদিস ও ফিকহের রেফারেন্সসহ নির্ভরযোগ্য মাসআলা সংকলন",
+  description:
+    "কুরআন, সুন্নাহ ও নির্ভরযোগ্য ফিকহি সূত্রের আলোকে বাংলা মাসআলা-মাসায়েল পড়ুন, বিষয়ভিত্তিক অনুসন্ধান করুন এবং নিজের দ্বীনি প্রশ্ন জমা দিন।",
+  applicationName: "মাসায়েল২৪",
+  keywords: [
+    "মাসায়েল২৪",
+    "মাসআলা",
+    "মাসআলা মাসায়েল",
+    "বাংলা ফতোয়া",
+    "ইসলামি প্রশ্ন উত্তর",
+    "হানাফি ফিকহ",
+    "কুরআন হাদিস",
+  ],
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
 };
 
 export default function RootLayout({
