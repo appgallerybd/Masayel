@@ -1,6 +1,6 @@
 import Link from "next/link";
 import {
-  ArrowLeft, ArrowUpRight, BookOpen, BookMarked, Bookmark,
+  ArrowLeft, ArrowUpRight, BookOpen, BookMarked,
   CheckCircle2, ChevronRight, CircleHelp, Compass, Feather,
   Landmark, Search, ShieldCheck, Sparkles, Users,
 } from "lucide-react";
