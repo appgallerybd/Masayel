@@ -1,24 +1,25 @@
-import { adminDb } from "@/lib/firebase/admin";
+import { adminDb, isFirebaseConfigured } from "@/lib/firebase/admin";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { Masala } from "@/types/masala";
 import { Category } from "@/types/category";
 import { Scholar } from "@/types/scholar";
 
-// এই ফাইলের ফাংশনগুলো শুধু Server Component-এ ("use client" ছাড়া
-// page.tsx/layout.tsx) ব্যবহার করা যাবে — কারণ firebase-admin Node.js
-// রানটাইম চায়, ব্রাউজারে চলবে না।
-
+// Public pages can render in preview mode without Firebase. In that mode the
+// site intentionally shows empty states; no sample fatwa or scholar is invented.
 export async function getCategories(): Promise<Category[]> {
+  if (!isFirebaseConfigured()) return [];
   const snap = await adminDb.collection(COLLECTIONS.categories).orderBy("order").get();
   return snap.docs.map((d) => d.data() as Category);
 }
 
 export async function getCategoryBySlug(slug: string): Promise<Category | null> {
+  if (!isFirebaseConfigured()) return null;
   const doc = await adminDb.collection(COLLECTIONS.categories).doc(slug).get();
   return doc.exists ? (doc.data() as Category) : null;
 }
 
 export async function getPublishedMasala(limit = 20): Promise<Masala[]> {
+  if (!isFirebaseConfigured()) return [];
   const snap = await adminDb
     .collection(COLLECTIONS.masala)
     .where("status", "==", "published")
@@ -29,6 +30,7 @@ export async function getPublishedMasala(limit = 20): Promise<Masala[]> {
 }
 
 export async function getMasalaByCategory(categorySlug: string): Promise<Masala[]> {
+  if (!isFirebaseConfigured()) return [];
   const snap = await adminDb
     .collection(COLLECTIONS.masala)
     .where("status", "==", "published")
@@ -39,6 +41,7 @@ export async function getMasalaByCategory(categorySlug: string): Promise<Masala[
 }
 
 export async function getMasalaBySlug(slug: string): Promise<Masala | null> {
+  if (!isFirebaseConfigured()) return null;
   const doc = await adminDb.collection(COLLECTIONS.masala).doc(slug).get();
   if (!doc.exists) return null;
   const masala = doc.data() as Masala;
@@ -46,6 +49,7 @@ export async function getMasalaBySlug(slug: string): Promise<Masala | null> {
 }
 
 export async function getMasalaByScholar(scholarSlug: string): Promise<Masala[]> {
+  if (!isFirebaseConfigured()) return [];
   const snap = await adminDb
     .collection(COLLECTIONS.masala)
     .where("status", "==", "published")
@@ -56,11 +60,13 @@ export async function getMasalaByScholar(scholarSlug: string): Promise<Masala[]>
 }
 
 export async function getScholars(): Promise<Scholar[]> {
+  if (!isFirebaseConfigured()) return [];
   const snap = await adminDb.collection(COLLECTIONS.scholars).get();
   return snap.docs.map((d) => d.data() as Scholar);
 }
 
 export async function getScholarBySlug(slug: string): Promise<Scholar | null> {
+  if (!isFirebaseConfigured()) return null;
   const doc = await adminDb.collection(COLLECTIONS.scholars).doc(slug).get();
   return doc.exists ? (doc.data() as Scholar) : null;
 }
